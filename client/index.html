@@ -4,9 +4,16 @@
     <div>Hello!</div>
 </div>
 
+<form id="chat-form">
+    <input id="chat-input" type="text" style="width:500px">
+</form>
+
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.dev.js"></script>
 <script>
+    var chatText = document.getElementById('chat-text');
+    var chatInput = document.getElementById('chat-input');
+    var chatForm = document.getElementById('chat-form');
     var ctx = document.getElementById("ctx").getContext("2d");
     ctx.font = '30px Arial';
     var socket = io();
@@ -30,12 +37,33 @@
 
     });
 
+    socket.on('addToChat', function (data) {
+        chatText.innerHTML += '<div>' + data + '</div>';
+    });
+
+    socket.on('evalAnswer', function (data) {
+        console.log(data);
+    })
+
+    chatForm.onsubmit = function (e) {
+        e.preventDefault(); // if you don't add it, when you press enter it refreshes. onsubmit -> preventdefault
+
+        if (chatInput.value[0] === '/') {
+            socket.emit('evalServer', chatInput.value.slice(1));
+        } else {
+            socket.emit('sendMsgToServer', chatInput.value);
+        }
+
+
+        chatInput.value = '';
+    }
+
     window.onbeforeunload = function () {
         socket.disconnect();
     }
 
     document.onkeydown = function (e) {
-        console.log('asdf');
+
         if (e.keyCode === 68) // d
             socket.emit('keyPress', {inputId: 'right', state: true});
         if (e.keyCode === 83) // s
@@ -47,7 +75,7 @@
     }
 
     document.onkeyup = function (e) {
-        console.log('qwer');
+
         if (e.keyCode === 68) // d
             socket.emit('keyPress', {inputId: 'right', state: false});
         if (e.keyCode === 83) // s
